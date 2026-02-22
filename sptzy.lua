@@ -1,102 +1,61 @@
---[[ 
-    FIXED BLATANTSPY V2
-    Perbaikan: Memastikan UI muncul di CoreGui dan bypass deteksi awal.
-]]
+local RemoteEventsCount = 0
+local RemoteFunctionsCount = 0
+local TimeElapsed = 0
 
--- 1. Pastikan Script tidak double run
-if getgenv().BlatantSpyLoaded then return end
-getgenv().BlatantSpyLoaded = true
-
-local ClonedFunctions = {} do 
-    ClonedFunctions.pcall = clonefunction(pcall)
-    ClonedFunctions.unpack = clonefunction(table.unpack or unpack)
-end
-
--- [ BYPASS & UTILS ]
-local function SecureGetHUI()
-    local success, result = pcall(function() return gethui() end)
-    if success and result then return result end
-    success, result = pcall(function() return game:GetService("CoreGui") end)
-    if success and result then return result end
-    return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-end
-
-local Utils = {}
-function Utils.GetPath(instance)
-    local path = instance.Name
-    local current = instance.Parent
-    while current and current ~= game do
-        path = current.Name .. "." .. path
-        current = current.Parent
-    end
-    return "game." .. path
-end
-
--- [ THEME ]
-local Theme = {
-    Primary = Color3.fromRGB(15, 15, 20),
-    Accent = Color3.fromRGB(0, 150, 255),
-    Text = Color3.fromRGB(255, 255, 255)
-}
-
--- [ UI BUILDER ]
-local UI = {}
-UI.MainGui = Instance.new("ScreenGui")
-UI.MainGui.Name = "BlatantSpy_Final"
-UI.MainGui.Parent = SecureGetHUI()
-
-local MainFrame = Instance.new("Frame", UI.MainGui)
-MainFrame.Size = UDim2.new(0, 500, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
-MainFrame.BackgroundColor3 = Theme.Primary
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true -- Deprecated but effective for basic execution
-
-local Header = Instance.new("TextLabel", MainFrame)
-Header.Size = UDim2.new(1, 0, 0, 30)
-Header.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-Header.Text = "  BLATANTSPY | LOGGER ACTIVE"
-Header.TextColor3 = Theme.Accent
-Header.TextXAlignment = Enum.TextXAlignment.Left
-Header.Font = Enum.Font.GothamBold
-
-local Scroll = Instance.new("ScrollingFrame", MainFrame)
-Scroll.Size = UDim2.new(1, -10, 1, -40)
-Scroll.Position = UDim2.new(0, 5, 0, 35)
-Scroll.BackgroundTransparency = 1
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-Scroll.ScrollBarThickness = 2
-
-local List = Instance.new("UIListLayout", Scroll)
-List.Padding = UDim.new(0, 5)
-
-function UI:Log(name, method, path)
-    local entry = Instance.new("TextLabel", Scroll)
-    entry.Size = UDim2.new(1, 0, 0, 30)
-    entry.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    entry.Text = string.format("[%s] %s", method, name)
-    entry.TextColor3 = Theme.Text
-    entry.TextSize = 10
-    entry.Font = Enum.Font.Code
-    Scroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y)
-end
-
--- [ LOGIC INTEGRATION ]
-local RawMetatable = getrawmetatable(game)
-local OldNamecall = RawMetatable.__namecall
-setreadonly(RawMetatable, false)
-
-RawMetatable.__namecall = newcclosure(function(self, ...)
-    local Method = getnamecallmethod()
-    
-    if not checkcaller() then
-        if Method == "FireServer" or Method == "InvokeServer" then
-            UI:Log(self.Name, Method, Utils.GetPath(self))
+local REC = coroutine.create(function()
+    for _, v in next, game:GetDescendants() do
+        if v:IsA("RemoteEvent") then
+            if v.Parent.Name ~= "DefaultChatSystemChatEvents" or v.Parent.Name ~= "RobloxReplicatedStorage" or v.Name ~= "CharacterSoundEvent" then
+                RemoteEventsCount += 1
+            end
         end
     end
-    
-    return OldNamecall(self, ...)
 end)
 
-setreadonly(RawMetatable, true)
+local RFC = coroutine.create(function()
+    for _, v in next, game:GetDescendants() do
+        if v:IsA("RemoteFunction") then
+            if v.Parent.Name ~= "DefaultChatSystemChatEvents" or v.Parent.Name ~= "RobloxReplicatedStorage" or v.Name ~= "CharacterSoundEvent" then
+                RemoteFunctionsCount += 1
+            end
+        end
+    end
+end)
+
+coroutine.resume(REC)
+coroutine.resume(RFC)
+
+repeat
+   wait()
+until coroutine.status(REC) == "dead" or coroutine.status(RFC) == "dead"
+
+print()
+warn("Remotes scan has started.")
+
+local Scan = coroutine.create(function()
+    for _, v in next, game:GetDescendants() do
+        if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+            if v.Parent.Name ~= "DefaultChatSystemChatEvents" then
+                if v.Parent.Name ~= "RobloxReplicatedStorage" then
+                    if v.Parent.Name ~= "DefaultSoundEvents" then
+                        if v.Name ~= "CharacterSoundEvent" then
+                            print("\n\n        [ "..v.ClassName.." ] :\n           {\n             Name     :   "..v.Name..",\n             Parent   :   "..v.Parent.Name..",\n             Ancestor :   "..v.Parent:FindFirstAncestor(v.Parent.Parent.Name).Name..",\n             Path     :   "..v:GetFullName()..",\n             Type     :   "..tostring(v.ClassName):sub(7, tonumber(string.len(v.ClassName))).."\n           };\n")
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+coroutine.resume(Scan)
+
+repeat 
+    wait()
+    TimeElapsed = TimeElapsed + wait()
+until coroutine.status(Scan) == "dead"
+
+warn("Remotes scan has ended, scan lasted "..TimeElapsed.." seconds.")
+game:GetService("TestService"):Message("RemoteEvents Found : "..RemoteEventsCount)
+game:GetService("TestService"):Message("RemoteFunctions Found : "..RemoteFunctionsCount)
+print()
