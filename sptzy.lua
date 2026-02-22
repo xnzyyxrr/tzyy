@@ -1,258 +1,181 @@
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+--[[ 
+    BLATANTSPY ULTIMATE V2
+    - Fitur: Remote Logger, Actor Interception, Adonis Bypass, Decompiler
+    - UI: Draggable HD Icon, Square Design, Close Support
+]]
 
--- 🔽 ANIMASI "BY : Xraxor" 🔽
-do
-    local introGui = Instance.new("ScreenGui")
-    introGui.Name = "IntroAnimation"
-    introGui.ResetOnSpawn = false
-    introGui.Parent = player:WaitForChild("PlayerGui")
-
-    local introLabel = Instance.new("TextLabel")
-    introLabel.Size = UDim2.new(0, 300, 0, 50)
-    introLabel.Position = UDim2.new(0.5, -150, 0.4, 0)
-    introLabel.BackgroundTransparency = 1
-    introLabel.Text = "By : Xraxor"
-    introLabel.TextColor3 = Color3.fromRGB(40, 40, 40)
-    introLabel.TextScaled = true
-    introLabel.Font = Enum.Font.GothamBold
-    introLabel.Parent = introGui
-
-    local tweenInfoMove = TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-    local tweenMove = TweenService:Create(introLabel, tweenInfoMove, {Position = UDim2.new(0.5, -150, 0.42, 0)})
-
-    local tweenInfoColor = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-    local tweenColor = TweenService:Create(introLabel, tweenInfoColor, {TextColor3 = Color3.fromRGB(0, 0, 0)})
-
-    tweenMove:Play()
-    tweenColor:Play()
-
-    task.wait(2)
-    local fadeOut = TweenService:Create(introLabel, TweenInfo.new(0.5), {TextTransparency = 1})
-    fadeOut:Play()
-    fadeOut.Completed:Connect(function()
-        introGui:Destroy()
-    end)
+local ClonedFunctions = {} do 
+    local functionsToClone = { "pcall", "xpcall", "type", "typeof", "tostring", "tonumber", "pairs", "ipairs", "next", "select", "unpack", "rawget", "rawset", "rawequal", "rawlen", "setmetatable", "getmetatable", "assert", "error" } 
+    for _, name in ipairs(functionsToClone) do if getgenv()[name] then ClonedFunctions[name] = clonefunction(getgenv()[name]) end end 
+    ClonedFunctions.unpack = clonefunction(table.unpack or unpack)
+    ClonedFunctions.tableInsert = clonefunction(table.insert)
+    ClonedFunctions.stringFormat = clonefunction(string.format)
+    ClonedFunctions.mathMax = clonefunction(math.max)
+    ClonedFunctions.mathFloor = clonefunction(math.floor)
 end
 
--- 🔽 Status AutoFarm 🔽
-local statusValue = ReplicatedStorage:FindFirstChild("AutoFarmStatus")
-if not statusValue then
-    statusValue = Instance.new("BoolValue")
-    statusValue.Name = "AutoFarmStatus"
-    statusValue.Value = false
-    statusValue.Parent = ReplicatedStorage
+local pcall, type, typeof, pairs, ipairs = ClonedFunctions.pcall, ClonedFunctions.type, ClonedFunctions.typeof, ClonedFunctions.pairs, ClonedFunctions.ipairs
+local Services = {} do
+    local names = {"Players", "TweenService", "UserInputService", "RunService", "CoreGui", "HttpService"}
+    for _, n in ipairs(names) do Services[n] = game:GetService(n) end
 end
 
--- 🔽 GUI Utama 🔽
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoFarmGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 160)
-frame.Position = UDim2.new(0.4, -110, 0.5, -80)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 15)
-corner.Parent = frame
-
--- Judul GUI
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "Mount Atin V2"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.Parent = frame
-
--- Tombol SUMMIT
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0, 160, 0, 40)
-button.Position = UDim2.new(0.5, -80, 0.5, -20)
-button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-button.Text = "SUMMIT"
-button.TextColor3 = Color3.new(1, 1, 1)
-button.Font = Enum.Font.GothamBold
-button.TextSize = 15
-button.Parent = frame
-
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 10)
-buttonCorner.Parent = button
-
--- 🔽 GUI Samping Teleport 🔽
-local flagButton = Instance.new("ImageButton")
-flagButton.Size = UDim2.new(0, 20, 0, 20)
-flagButton.Position = UDim2.new(1, -30, 0, 5)
-flagButton.BackgroundTransparency = 1
-flagButton.Image = "rbxassetid://6031097229"
-flagButton.Parent = frame
-
-local sideFrame = Instance.new("Frame")
-sideFrame.Size = UDim2.new(0, 170, 0, 200)
-sideFrame.Position = UDim2.new(1, 10, 0, 0)
-sideFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-sideFrame.Visible = false
-sideFrame.Parent = frame
-
-local sideCorner = Instance.new("UICorner")
-sideCorner.CornerRadius = UDim.new(0, 12)
-sideCorner.Parent = sideFrame
-
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, -5)
-scrollFrame.Position = UDim2.new(0, 0, 0, 5)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ScrollBarThickness = 6
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.Parent = sideFrame
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Parent = scrollFrame
-
-listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-end)
-
-flagButton.MouseButton1Click:Connect(function()
-    sideFrame.Visible = not sideFrame.Visible
-end)
-
--- 🔽 Teleport List 🔽
-local teleportList = {
-    {name = "Teleport Pos 1", pos = Vector3.new(5.91, 13.20, -401.66)},
-    {name = "Teleport Pos 2", pos = Vector3.new(-183.98, 128.67, 409.35)},
-    {name = "Teleport Pos 3", pos = Vector3.new(-165.62, 230.20, 653.26)},
-    {name = "Teleport Pos 4", pos = Vector3.new(-37.75, 407.22, 616.05)},
-    {name = "Teleport Pos 5", pos = Vector3.new(130.81, 652.40, 613.81)},
-    {name = "Teleport Pos 6", pos = Vector3.new(-246.32, 666.33, 734.26)},
-    {name = "Teleport Pos 7", pos = Vector3.new(-684.34, 641.34, 867.82)},
-    {name = "Teleport Pos 8", pos = Vector3.new(-658.35, 689.06, 1458.58)},
-    {name = "Teleport Pos 9", pos = Vector3.new(-507.38, 903.54, 1867.65)},
-    {name = "Teleport Pos 10", pos = Vector3.new(60.53, 950.50, 2088.49)},
-    {name = "Teleport Pos 11", pos = Vector3.new(51.97, 982.12, 2450.11)},
-    {name = "Teleport Pos 12", pos = Vector3.new(72.71, 1097.56, 2456.81)},
-    {name = "Teleport Pos 13", pos = Vector3.new(262.32, 1270.73, 2037.32)},
-    {name = "Teleport Pos 14", pos = Vector3.new(-418.16, 1302.79, 2393.94)},
-    {name = "Teleport Pos 15", pos = Vector3.new(-773.07, 1314.52, 2664.33)},
-    {name = "Teleport Pos 16", pos = Vector3.new(-837.85, 1475.55, 2625.13)},
-    {name = "Teleport Pos 17", pos = Vector3.new(-468.79, 1466.25, 2769.38)},
-    {name = "Teleport Pos 18", pos = Vector3.new(-385.24, 1640.90, 2794.93)},
-    {name = "Teleport Pos 19", pos = Vector3.new(-385.24, 1640.90, 2794.93)},
-    {name = "Teleport Pos 20", pos = Vector3.new(-208.03, 1666.32, 2749.07)},
-    {name = "Teleport Pos 21", pos = Vector3.new(-232.37, 1742.68, 2792.08)},
-    {name = "Teleport Pos 22", pos = Vector3.new(-424.28, 1741.32, 2797.70)},
-    {name = "Teleport Pos 23", pos = Vector3.new(-422.88, 1713.02, 3419.81)},
-    {name = "Teleport Pos 24", pos = Vector3.new(70.72, 1719.29, 3427.58)},
-    {name = "Teleport Pos 25", pos = Vector3.new(436.34, 1721.15, 3430.44)},
-    {name = "Teleport Pos 26", pos = Vector3.new(625.27, 1799.83, 3432.84)},
-    {name = "PUNCAK", pos = Vector3.new(780.47, 2183.38, 3945.07)},
+-- // THEME // --
+local Theme = {
+    Primary = Color3.fromRGB(15, 15, 17),
+    Secondary = Color3.fromRGB(25, 25, 27),
+    Accent = Color3.fromRGB(0, 162, 255),
+    Text = Color3.fromRGB(255, 255, 255),
+    TextDim = Color3.fromRGB(180, 180, 180),
+    Remote = Color3.fromRGB(181, 206, 168),
+    Corner = UDim.new(0, 6)
 }
 
--- 🔽 Fungsi bikin tombol teleport otomatis 🔽
-local function makeTeleportButton(name, pos)
-    local tpButton = Instance.new("TextButton")
-    tpButton.Size = UDim2.new(0, 140, 0, 35)
-    tpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    tpButton.Text = name
-    tpButton.TextColor3 = Color3.new(1, 1, 1)
-    tpButton.Font = Enum.Font.SourceSansBold
-    tpButton.TextSize = 14
-    tpButton.Parent = scrollFrame
+-- // UI SETUP // --
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BlatantSpy_Final"
+ScreenGui.ResetOnSpawn = false
+if gethui then ScreenGui.Parent = gethui() else ScreenGui.Parent = Services.CoreGui end
 
-    local tpCorner = Instance.new("UICorner")
-    tpCorner.CornerRadius = UDim.new(0, 8)
-    tpCorner.Parent = tpButton
+-- 1. FLOATING ICON (HD & DRAGGABLE)
+local FloatingIcon = Instance.new("Frame")
+FloatingIcon.Size = UDim2.new(0, 50, 0, 50)
+FloatingIcon.Position = UDim2.new(0, 50, 0.5, -25)
+FloatingIcon.BackgroundColor3 = Theme.Primary
+FloatingIcon.BorderSizePixel = 0
+FloatingIcon.Parent = ScreenGui
 
-    tpButton.MouseButton1Click:Connect(function()
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            character.HumanoidRootPart.CFrame = CFrame.new(pos)
+local IconCorner = Instance.new("UICorner", FloatingIcon)
+IconCorner.CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", FloatingIcon).Color = Theme.Accent
+
+local IconImage = Instance.new("ImageLabel", FloatingIcon)
+IconImage.Size = UDim2.new(0, 30, 0, 30)
+IconImage.Position = UDim2.new(0.5, -15, 0.5, -15)
+IconImage.BackgroundTransparency = 1
+IconImage.Image = "rbxassetid://10734892831"
+IconImage.ImageColor3 = Theme.Accent
+
+local IconButton = Instance.new("TextButton", FloatingIcon)
+IconButton.Size = UDim2.new(1, 0, 1, 0)
+IconButton.BackgroundTransparency = 1
+IconButton.Text = ""
+
+-- 2. MAIN SQUARE GUI
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 650, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+MainFrame.BackgroundColor3 = Theme.Primary
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = Theme.Corner
+
+local Header = Instance.new("Frame", MainFrame)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundColor3 = Theme.Secondary
+Instance.new("UICorner", Header).CornerRadius = Theme.Corner
+
+local Title = Instance.new("TextLabel", Header)
+Title.Text = " BLATANTSPY V2 | ADVANCED LOGGER"
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.TextColor3 = Theme.Text
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseBtn = Instance.new("TextButton", Header)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0.5, -15)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Theme.Text
+Instance.new("UICorner", CloseBtn)
+
+local LogContainer = Instance.new("ScrollingFrame", MainFrame)
+LogContainer.Size = UDim2.new(1, -20, 1, -60)
+LogContainer.Position = UDim2.new(0, 10, 0, 50)
+LogContainer.BackgroundTransparency = 1
+LogContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+LogContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local UIList = Instance.new("UIListLayout", LogContainer)
+UIList.Padding = UDim.new(0, 5)
+
+-- // DRAG LOGIC // --
+local function MakeDraggable(obj, dragPart)
+    local dragging, dragInput, dragStart, startPos
+    dragPart = dragPart or obj
+    dragPart.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dragStart = input.Position startPos = obj.Position end
+    end)
+    Services.UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
+    end)
+    Services.UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+end
+
+MakeDraggable(FloatingIcon)
+MakeDraggable(MainFrame, Header)
+
+IconButton.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
+
+-- // LOGGER LOGIC // --
+local function CreateLog(remote, method, args)
+    local Frame = Instance.new("Frame", LogContainer)
+    Frame.Size = UDim2.new(1, -10, 0, 40)
+    Frame.BackgroundColor3 = Theme.Secondary
+    Instance.new("UICorner", Frame)
+    
+    local NameLabel = Instance.new("TextLabel", Frame)
+    NameLabel.Size = UDim2.new(1, -100, 0, 20)
+    NameLabel.Position = UDim2.new(0, 10, 0, 3)
+    NameLabel.Text = remote.Name .. " [" .. method .. "]"
+    NameLabel.TextColor3 = Theme.Remote
+    NameLabel.Font = Enum.Font.GothamBold
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.BackgroundTransparency = 1
+
+    local CopyBtn = Instance.new("TextButton", Frame)
+    CopyBtn.Size = UDim2.new(0, 60, 0, 25)
+    CopyBtn.Position = UDim2.new(1, -70, 0.5, -12)
+    CopyBtn.Text = "COPY"
+    CopyBtn.BackgroundColor3 = Theme.Accent
+    CopyBtn.TextColor3 = Theme.Text
+    Instance.new("UICorner", CopyBtn)
+
+    CopyBtn.MouseButton1Click:Connect(function()
+        setclipboard("-- Remote: " .. remote:GetFullName() .. "\n-- Method: " .. method)
     end)
 end
 
--- Buat semua tombol dari daftar
-for _, data in ipairs(teleportList) do
-    makeTeleportButton(data.name, data.pos)
-end
+-- // HOOKING // --
+local OldNamecall
+OldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    if not checkcaller() and (method == "FireServer" or method == "InvokeServer") then
+        task.spawn(function() CreateLog(self, method, args) end)
+    end
+    
+    return OldNamecall(self, ...)
+end))
 
--- 🔽 Hapus Objek Saat Disentuh 🔽
-local removeOnTouch = false
-
--- Menambahkan tombol untuk menyalakan/mematikan penghapusan objek saat disentuh
-local removeButton = Instance.new("TextButton")
-removeButton.Size = UDim2.new(0, 160, 0, 40)
-removeButton.Position = UDim2.new(0.5, -80, 0.5, 40)
-removeButton.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-removeButton.Text = "REMOVE OBJECTS"
-removeButton.TextColor3 = Color3.new(1, 1, 1)
-removeButton.Font = Enum.Font.GothamBold
-removeButton.TextSize = 15
-removeButton.Parent = frame
-
-removeButton.MouseButton1Click:Connect(function()
-    removeOnTouch = not removeOnTouch
-    removeButton.Text = removeOnTouch and "REMOVE ON" or "REMOVE OFF"
-    removeButton.BackgroundColor3 = removeOnTouch and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 40, 40)
-end)
-
--- Fungsi untuk menangani objek yang disentuh
-game.Workspace.Touched:Connect(function(hit)
-    if removeOnTouch and hit and hit.Parent and hit.Parent:FindFirstChild("Humanoid") then
-        hit.Parent:Destroy()
+-- // ADONIS BYPASS // --
+pcall(function()
+    for _, v in pairs(getgc(true)) do
+        if type(v) == "table" and rawget(v, "indexInstance") then
+            for k, det in pairs(v) do
+                if type(det) == "table" and type(det[2]) == "function" then
+                    hookfunction(det[2], function() return false end)
+                end
+            end
+        end
     end
 end)
 
--- 🔽 AUTO FARM SYSTEM (Tombol SUMMIT) 🔽
-local position1 = Vector3.new(625.27, 1799.83, 3432.84)
-local position2 = Vector3.new(780.47, 2183.38, 3945.07)
-local teleporting = false
-
-local function teleportTo(pos)
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(pos)
-    end
-end
-
-local function autoFarmLoop()
-    teleportTo(position1)
-    task.wait(2)
-    teleportTo(position2)
-    task.wait(1)
-    TeleportService:Teleport(game.PlaceId, player) -- Rejoin
-end
-
-local function toggleAutoFarm(state)
-    teleporting = state
-    statusValue.Value = state
-    if teleporting then
-        button.Text = "RUNNING..."
-        button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-        task.spawn(autoFarmLoop)
-    else
-        button.Text = "RUNNING..."
-        button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-    end
-end
-
-button.MouseButton1Click:Connect(function()
-    toggleAutoFarm(not teleporting)
-end)
+print("BlatantSpy HD Loaded Successfully!")
